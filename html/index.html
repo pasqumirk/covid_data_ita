@@ -1,1 +1,165 @@
-Hello
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Dati Covid 19 in Italia</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no">
+</head>
+
+<script type="text/javascript" src="js/jquery/jquery-3.3.1.min.js"></script>
+<script type="text/javascript" src="js/chart/Chart.min.js"></script>
+
+<script type="text/javascript" src="data/dati.js"></script>
+
+<body>
+    <h2>Dati COVID19 in Italia</h2>
+
+    <table>
+        <tr>
+            <td style="width: 600px">
+                <canvas style="display: none" id="chart_totale" width="100%" height="100%">
+                    Graph not supported by browser
+                </canvas>
+            </td>
+            <td style="width: 600px">
+                <canvas style="display: none" id="chart_malati" width="100%" height="100%">
+                    Graph not supported by browser
+                </canvas>
+            </td>
+        </tr>
+        <tr>
+            <td style="width: 600px">
+                <canvas style="display: none" id="chart_deceduti" width="100%" height="100%">
+                    Graph not supported by browser
+                </canvas>
+            </td>
+        </tr>
+    </table>
+
+</body>
+
+<script>
+    function keyToDescription(key) {
+        if (key == 'totale_positivi') {
+            return "Totale positivi";
+        } else if (key == 'terapia_intensiva') {
+            return "Terapia intensiva";
+        } else if (key == 'totale_ospedalizzati') {
+            return "Ospedalizzati";
+        } else if (key == 'deceduti') {
+            return "Deceduti";
+        } else if (key == 'nuovi_decessi') {
+            return "Nuovi decessi";
+        }
+        return key;
+    }
+
+    function buildBorderColor(key) {
+        if (key == 'totale_positivi') {
+            return "rgb(54, 162, 235)";
+        } else if (key == 'terapia_intensiva') {
+            return "rgba(255, 159, 64, 0.2)";
+        } else if (key == 'totale_ospedalizzati') {
+            return "rgba(255, 205, 86, 0.2)";
+        } else if (key == '3') {
+            return 'rgba(75, 192, 192, 0.2)';
+        } else if (key == '4') {
+            return "rgba(54, 162, 235, 0.2)";
+        } else if (key == '5') {
+            return "rgba(201, 203, 207, 0.2)";
+        } else if (key == '6') {
+            return "rgba(153, 102, 255, 0.2)";
+        } else if (key == '7') {
+            return "rgba(255, 99, 132, 0.2)";
+        }
+        return '';
+    }
+
+    function buildBackgroundColor(key) {
+        if (key == 'totale_positivi') {
+            return "rgba(54, 162, 235, 0.2)";
+        } else if (key == 'terapia_intensiva') {
+            return "rgb(255, 159, 64)";
+        } else if (key == 'totale_ospedalizzati') {
+            return "rgb(255, 205, 86)";
+        } else if (key == 'confirmed') {
+            return "rgb(75, 192, 192)";
+        } else if (key == '3') {
+            return "rgb(54, 162, 235)";
+        } else if (key == '4') {
+            return "rgb(201, 203, 207)";
+        } else if (key == '5') {
+            return "rgb(153, 102, 255)";
+        } else if (key == '6') {
+            return "rgb(255, 99, 132)";
+        }
+        return "";
+    }
+
+    var current_graphs = [];
+
+    function drawGraph(name, title, keys, dataAll) {
+        let datasets = [];
+        let labels = dataAll.map(el => el.data);
+        for (let i = 0; i < keys.length; i++) {
+		    let key = keys[i];
+			let label = keyToDescription(key);
+    		let data = dataAll.map(el => el[key]);
+		    let borderColor = buildBorderColor(key);
+		    let backgroundColor = buildBackgroundColor(key);
+            datasets.push ({
+                label: label,
+                data: data,
+                borderColor: borderColor,
+                backgroundColor: backgroundColor
+            })
+	    }
+        const data = {
+            labels: labels,
+            datasets: datasets
+        }
+
+        let myChart = current_graphs[name];
+        if (myChart != null) {
+            myChart.destroy();
+        }
+
+        let ctx = $('#chart_'+name);
+        myChart = new Chart(ctx, {
+	        type: 'line',
+	        data: data,
+	        options: {
+                responsive: true,
+                legend: {
+                    display: true,
+                    position: 'top',
+                },
+                title: {
+                    display: true,
+                    text: title
+                }
+	        }
+	    });
+        current_graphs[name] = myChart;
+        $('#chart_'+name).show();
+    }
+
+    function drawGraphTotale(dataAll) {
+        let keys = ['totale_positivi'];
+        drawGraph("totale", "Totali", keys, dataAll);
+    }
+
+    function drawGraphMalati(dataAll) {
+        let keys = ['totale_ospedalizzati', 'terapia_intensiva'];
+        drawGraph("malati", "Malati", keys, dataAll);
+    }
+
+    function drawGraphDeceduti(dataAll) {
+        let keys = ['nuovi_decessi'];
+        drawGraph("deceduti", "", keys, dataAll);
+    }
+
+    drawGraphTotale(all_data);
+    drawGraphMalati(all_data);
+    drawGraphDeceduti(all_data);
+    
+</script>

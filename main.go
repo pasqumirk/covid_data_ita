@@ -8,6 +8,8 @@ import (
 	"io/ioutil"
 	"net/http"
 	"os"
+	"os/exec"
+	"runtime"
 	"time"
 
 	"github.com/gocarina/gocsv"
@@ -25,6 +27,7 @@ type DayData struct {
 	NuoviPositivi             int    `csv:"nuovi_positivi" json:"nuovi_positivi"`
 	DimessiGuariti            int    `csv:"dimessi_guariti" json:"dimessi_guariti"`
 	Deceduti                  int    `csv:"deceduti" json:"deceduti"`
+	NuoviDecessi              int    `json:"nuovi_decessi"`
 	CasiDaSospettoDiagnostico int    `csv:"casi_da_sospetto_diagnostico" json:"casi_da_sospetto_diagnostico"`
 	CasiDaScreening           int    `csv:"casi_da_screening" json:"casi_da_screening"`
 	TotaleCasi                int    `csv:"totale_casi" json:"totale_casi"`
@@ -36,10 +39,33 @@ type DayData struct {
 	NoteCasi                  string `csv:"note_casi" json:"note_casi"`
 }
 
-func (data *DayData) Adjust() {
-	if data.Data != "" {
-		data.Data = data.Data[:10]
+func (data *DayData) Adjust(prev_deceduti int) {
+	date, err := time.Parse("2006-01-02T15:04:05", data.Data)
+	if err == nil {
+		data.Data = date.Format("02/01/2006")
 	}
+	if prev_deceduti < 0 {
+		data.NuoviDecessi = 0
+	} else {
+		data.NuoviDecessi = data.Deceduti - prev_deceduti
+	}
+}
+
+func open(url string) error {
+	var cmd string
+	var args []string
+
+	switch runtime.GOOS {
+	case "windows":
+		cmd = "cmd"
+		args = []string{"/c", "start"}
+	case "darwin":
+		cmd = "open"
+	default: // "linux", "freebsd", "openbsd", "netbsd"
+		cmd = "xdg-open"
+	}
+	args = append(args, url)
+	return exec.Command(cmd, args...).Start()
 }
 
 func main() {
@@ -102,8 +128,10 @@ func main() {
 		allDays = append(allDays, lines...)
 	}
 
+	prev_deceduti := -1
 	for _, day := range allDays {
-		day.Adjust()
+		day.Adjust(prev_deceduti)
+		prev_deceduti = day.Deceduti
 	}
 
 	csvAllName := "out/dati-totali.csv"
@@ -124,7 +152,9 @@ func main() {
 		fmt.Printf("Errore di costruzione json: %s", err.Error())
 		os.Exit(1)
 	}
-	ioutil.WriteFile("out/dati-totali.json", json, fs.ModePerm)
+	js := fmt.Sprintf("var all_data = %s;", string(json))
+	ioutil.WriteFile("html/data/dati.js", []byte(js), fs.ModePerm)
 
+	open("html/index.html")
 	os.Exit(0)
 }
