@@ -7,6 +7,7 @@
 
 <script type="text/javascript" src="js/jquery/jquery-3.3.1.min.js"></script>
 <script type="text/javascript" src="js/chart/Chart.min.js"></script>
+<script type="text/javascript" src="js/day.min.js"></script>
 
 <script type="text/javascript" src="data/dati.js"></script>
 
@@ -32,6 +33,11 @@
                     Graph not supported by browser
                 </canvas>
             </td>
+            <td style="width: 600px">
+                <canvas style="display: none" id="chart_confronti" width="100%" height="100%">
+                    Graph not supported by browser
+                </canvas>
+            </td>
         </tr>
     </table>
 
@@ -39,60 +45,56 @@
 
 <script>
     function keyToDescription(key) {
-        if (key == 'totale_positivi') {
-            return "Totale positivi";
-        } else if (key == 'terapia_intensiva') {
-            return "Terapia intensiva";
-        } else if (key == 'totale_ospedalizzati') {
-            return "Ospedalizzati";
-        } else if (key == 'deceduti') {
-            return "Deceduti";
-        } else if (key == 'nuovi_decessi') {
-            return "Nuovi decessi";
+        let descriptions = {
+            'totale_positivi': "Totale positivi",
+            'terapia_intensiva': "Terapia intensiva",
+            'totale_ospedalizzati': "Ospedalizzati",
+            'deceduti': "Deceduti",
+            'nuovi_decessi': "Nuovi decessi",
+            'variazione_positivi': "Variazione positivi (%)",
+            'variazione_ospedalizzati': "Variazione ospedalizzati (%)",
+            'variazione_terapia_intensiva': 'Variazione terapia intensiva (%)',
+            'variazione_nuovi_decessi': "Variazione decessi (%)",
         }
-        return key;
+        return descriptions[key] ? descriptions[key] : '';
     }
 
     function buildBorderColor(key) {
-        if (key == 'totale_positivi') {
-            return "rgb(54, 162, 235)";
-        } else if (key == 'terapia_intensiva') {
-            return "rgba(255, 159, 64, 0.2)";
-        } else if (key == 'totale_ospedalizzati') {
-            return "rgba(255, 205, 86, 0.2)";
-        } else if (key == '3') {
-            return 'rgba(75, 192, 192, 0.2)';
-        } else if (key == '4') {
-            return "rgba(54, 162, 235, 0.2)";
-        } else if (key == '5') {
-            return "rgba(201, 203, 207, 0.2)";
-        } else if (key == '6') {
-            return "rgba(153, 102, 255, 0.2)";
-        } else if (key == '7') {
-            return "rgba(255, 99, 132, 0.2)";
+        let colors = {
+            'totale_positivi': "rgb(54, 162, 235)",
+            'terapia_intensiva': "rgba(255, 159, 64)",
+            'totale_ospedalizzati': "rgba(255, 205, 86)",
+            'nuovi_decessi': "rgb(0, 0, 0)",
+            'variazione_positivi': "rgb(54, 162, 235)",
+            'variazione_ospedalizzati': "rgba(255, 205, 86)",
+            'variazione_terapia_intensiva': 'rgba(255, 159, 64)',
+            'variazione_nuovi_decessi': "rgb(0, 0, 0)",
+            '3': 'rgba(75, 192, 192)',
+            '4': "rgba(54, 162, 235)",
+            '5': "rgba(201, 203, 207)",
+            '6': "rgba(153, 102, 255)",
+            '7': "rgba(255, 99, 132)"
         }
-        return '';
+        return colors[key] ? colors[key] : '';
     }
 
     function buildBackgroundColor(key) {
-        if (key == 'totale_positivi') {
-            return "rgba(54, 162, 235, 0.2)";
-        } else if (key == 'terapia_intensiva') {
-            return "rgb(255, 159, 64)";
-        } else if (key == 'totale_ospedalizzati') {
-            return "rgb(255, 205, 86)";
-        } else if (key == 'confirmed') {
-            return "rgb(75, 192, 192)";
-        } else if (key == '3') {
-            return "rgb(54, 162, 235)";
-        } else if (key == '4') {
-            return "rgb(201, 203, 207)";
-        } else if (key == '5') {
-            return "rgb(153, 102, 255)";
-        } else if (key == '6') {
-            return "rgb(255, 99, 132)";
+        let colors = {
+            'totale_positivi': "rgb(54, 162, 235, 0.2)",
+            'terapia_intensiva': "rgba(255, 159, 64, 0.2)",
+            'totale_ospedalizzati': "rgba(255, 205, 86, 0.2)",
+            'nuovi_decessi': "rgb(0, 0, 0, 0.2)",
+            'variazione_positivi': "rgb(54, 162, 235, 0.2)",
+            'variazione_ospedalizzati': "rgba(255, 205, 86, 0.2)",
+            'variazione_terapia_intensiva': 'rgba(255, 159, 64, 0.2)',
+            'variazione_nuovi_decessi': "rgb(0, 0, 0, 0.2)",
+            '3': 'rgba(75, 192, 192, 0.2)',
+            '4': "rgba(54, 162, 235, 0.2)",
+            '5': "rgba(201, 203, 207, 0.2)",
+            '6': "rgba(153, 102, 255, 0.2)",
+            '7': "rgba(255, 99, 132, 0.2)"
         }
-        return "";
+        return colors[key] ? colors[key] : '';
     }
 
     var current_graphs = [];
@@ -158,8 +160,32 @@
         drawGraph("deceduti", "", keys, dataAll);
     }
 
+    function variazionePercentuale(dataAll, i, key) {
+        let el = dataAll[i];
+        let prev = dataAll[i - 365];
+        return prev[key] == 0 ? 0 : 
+            Math.round(((el[key] - prev[key]) * 1000) / prev[key]) / 10;
+    }
+
+    function drawGraphVariazioneRicoveri(dataAll) {
+        let offset = 98;
+        for (let i=365 + offset; i < dataAll.length; i++) {
+            let el = Object.assign({}, dataAll[i]);
+            let prev = dataAll[i - 365];
+            dataAll[i].variazione_positivi = variazionePercentuale(dataAll, i, 'totale_positivi');
+            dataAll[i].variazione_ospedalizzati = variazionePercentuale(dataAll, i, 'totale_ospedalizzati');
+            dataAll[i].variazione_terapia_intensiva = variazionePercentuale(dataAll, i, 'terapia_intensiva');
+            dataAll[i].variazione_nuovi_decessi = variazionePercentuale(dataAll, i, 'nuovi_decessi');
+        }
+        let keys = ['variazione_positivi', 'variazione_ospedalizzati', 'variazione_terapia_intensiva', 'variazione_nuovi_decessi'];
+        let data = dataAll.slice(365 + offset);
+        drawGraph("confronti", "", keys, data);
+    }
+
     drawGraphTotale(all_data);
     drawGraphMalati(all_data);
     drawGraphDeceduti(all_data);
+
+    drawGraphVariazioneRicoveri(all_data);
     
 </script>

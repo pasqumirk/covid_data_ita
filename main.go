@@ -2,6 +2,7 @@ package main
 
 import (
 	"encoding/json"
+	"flag"
 	"fmt"
 	"io"
 	"io/fs"
@@ -68,8 +69,26 @@ func open(url string) error {
 	return exec.Command(cmd, args...).Start()
 }
 
+func mkdirIfNotExists(dirName string) error {
+	if _, err := os.Stat(dirName); os.IsNotExist(err) {
+		return os.Mkdir(dirName, os.ModePerm)
+	}
+	return nil
+}
+
 func main() {
-	os.Mkdir("out/", os.ModePerm)
+	clean := flag.Bool("clean", false, "Elimina i dati dalle cartelle")
+	flag.Parse()
+	if *clean {
+		os.RemoveAll("out/")
+		os.RemoveAll("html/data/")
+		os.Exit(0)
+	}
+
+	if err := mkdirIfNotExists("out/"); err != nil {
+		fmt.Printf("Impossibile creare la directory out/: %s", err.Error())
+		os.Exit(1)
+	}
 
 	fmt.Println("Dati acquisiti da https://github.com/pcm-dpc/COVID-19/")
 
@@ -77,7 +96,7 @@ func main() {
 	location := now.Location()
 
 	// 1) Grab files
-	day := time.Date(2020, 2, 24, 23, 59, 59, 0, location)
+	day := time.Date(2020, 2, 23, 23, 59, 59, 0, location)
 	for day.Before(now) {
 		day = day.AddDate(0, 0, 1)
 		file := fmt.Sprintf("dpc-covid19-ita-andamento-nazionale-%s.csv", day.Format("20060102"))
@@ -85,7 +104,7 @@ func main() {
 		if _, err := os.Stat(outfile); !os.IsNotExist(err) {
 			continue
 		}
-		fmt.Printf("Processa %s\n", day.Format("2006-01-02"))
+		fmt.Printf("Processa %s\n", day.Format("02/01/2006"))
 
 		url := fmt.Sprintf("https://raw.githubusercontent.com/pcm-dpc/COVID-19/master/dati-andamento-nazionale/%s", file)
 		resp, err := http.Get(url)
@@ -96,32 +115,32 @@ func main() {
 		defer resp.Body.Close()
 		body, err := io.ReadAll(resp.Body)
 		if err != nil {
-			fmt.Printf("Errore di lettura da rete: %s", err.Error())
+			fmt.Printf("Errore di lettura da rete: %s\n", err.Error())
 			continue
 		}
 		err = ioutil.WriteFile(outfile, body, 0644)
 		if err != nil {
-			fmt.Printf("Errore di apertura file: %s", err.Error())
+			fmt.Printf("Errore di apertura file: %s\n", err.Error())
 			continue
 		}
 	}
 
 	// 2) Process files
 	allDays := []*DayData{}
-	day = time.Date(2020, 2, 24, 23, 59, 59, 0, location)
+	day = time.Date(2020, 2, 23, 23, 59, 59, 0, location)
 	for day.Before(now) {
 		day = day.AddDate(0, 0, 1)
 		csvFileName := fmt.Sprintf("out/dpc-covid19-ita-andamento-nazionale-%s.csv", day.Format("20060102"))
 		csvFile, err := os.Open(csvFileName)
 		if err != nil {
-			fmt.Printf("Errore di apertura file %s: %s", csvFileName, err.Error())
+			fmt.Printf("Errore di apertura file %s: %s\n", csvFileName, err.Error())
 			continue
 		}
 		defer csvFile.Close()
 
 		lines := []*DayData{}
 		if err := gocsv.UnmarshalFile(csvFile, &lines); err != nil {
-			fmt.Printf("Errore di lettura file %s: %s", csvFileName, err.Error())
+			fmt.Printf("Errore di lettura file %s: %s\n", csvFileName, err.Error())
 			continue
 		}
 		csvFile.Close()
@@ -137,23 +156,31 @@ func main() {
 	csvAllName := "out/dati-totali.csv"
 	csvAll, err := os.Create(csvAllName)
 	if err != nil {
-		fmt.Printf("Errore di apertura file globale: %s", err.Error())
+		fmt.Printf("Errore di apertura file globale: %s\n", err.Error())
 		os.Exit(1)
 	}
 	defer csvAll.Close()
 	err = gocsv.MarshalFile(&allDays, csvAll)
 	if err != nil {
-		fmt.Printf("Errore di scrittura file globale: %s", err.Error())
+		fmt.Printf("Errore di scrittura file globale: %s\n", err.Error())
 		os.Exit(1)
 	}
 
+	if err := mkdirIfNotExists("html/data/"); err != nil {
+		fmt.Printf("Impossibile creare la directory html/data/: %s", err.Error())
+		os.Exit(1)
+	}
 	json, err := json.Marshal(allDays)
 	if err != nil {
-		fmt.Printf("Errore di costruzione json: %s", err.Error())
+		fmt.Printf("Errore di costruzione json: %s\n", err.Error())
 		os.Exit(1)
 	}
 	js := fmt.Sprintf("var all_data = %s;", string(json))
-	ioutil.WriteFile("html/data/dati.js", []byte(js), fs.ModePerm)
+	err = ioutil.WriteFile("html/data/dati.js", []byte(js), fs.ModePerm)
+	if err != nil {
+		fmt.Printf("Errore di salvataggio json: %s\n", err.Error())
+		os.Exit(1)
+	}
 
 	open("html/index.html")
 	os.Exit(0)
