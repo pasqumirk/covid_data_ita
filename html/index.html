@@ -1,8 +1,14 @@
-<!DOCTYPE html>
-<html>
-<head>
+<!doctype html>
+<html lang="it">
+  <head>
+    <!-- Required meta tags -->
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+
+    <!-- Bootstrap CSS -->
+    <link href="css/bootstrap.min.css" rel="stylesheet">
+
     <title>Dati Covid 19 in Italia</title>
-    <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no">
 </head>
 
 <script type="text/javascript" src="js/jquery/jquery-3.3.1.min.js"></script>
@@ -12,36 +18,41 @@
 <script type="text/javascript" src="data/dati.js"></script>
 
 <body>
-    <h2>Dati COVID19 in Italia</h2>
-
-    <table>
-        <tr>
-            <td style="width: 600px">
+    <div class="container">
+        <div class="row">
+            <div class="col-12">
+                <h2>Dati COVID19 in Italia</h2>
+                <h5>Dati acquisiti dal repository della protezione civile https://github.com/pcm-dpc/COVID-19/</h5>
+            </div>
+        </div>
+        <div class="row">
+            <div class="col-lg-6">
                 <canvas style="display: none" id="chart_totale" width="100%" height="100%">
                     Graph not supported by browser
                 </canvas>
-            </td>
-            <td style="width: 600px">
+            </div>
+            <div class="col-lg-6">
                 <canvas style="display: none" id="chart_malati" width="100%" height="100%">
                     Graph not supported by browser
                 </canvas>
-            </td>
-        </tr>
-        <tr>
-            <td style="width: 600px">
+            </div>
+        </div>
+        <div class="row">
+            <div class="col-lg-6">
                 <canvas style="display: none" id="chart_deceduti" width="100%" height="100%">
                     Graph not supported by browser
                 </canvas>
-            </td>
-            <td style="width: 600px">
+            </div>
+            <div class="col-lg-6">
                 <canvas style="display: none" id="chart_confronti" width="100%" height="100%">
                     Graph not supported by browser
                 </canvas>
-            </td>
-        </tr>
-    </table>
+            </div>
+        </div>
+    </div>
 
 </body>
+<script src="js/bootstrap.bundle.min.js"></script>
 
 <script>
     function keyToDescription(key) {
