@@ -27,23 +27,27 @@
         </div>
         <div class="row">
             <div class="col-lg-6">
-                <canvas style="display: none" id="chart_totale" width="100%" height="100%">
+                Numero giornaliero di nuovi positivi
+                <canvas style="display: none" id="chart_nuovi_positivi" width="100%" height="100%">
                     Graph not supported by browser
                 </canvas>
             </div>
             <div class="col-lg-6">
+                Numero giornaliero di persone ricoverate in ospedale ed in tarapia intensiva
                 <canvas style="display: none" id="chart_malati" width="100%" height="100%">
                     Graph not supported by browser
                 </canvas>
             </div>
         </div>
-        <div class="row">
+        <div class="row mt-5">
             <div class="col-lg-6">
+                Numero giornaliero di decessi
                 <canvas style="display: none" id="chart_deceduti" width="100%" height="100%">
                     Graph not supported by browser
                 </canvas>
             </div>
             <div class="col-lg-6">
+                Confronti in percentuale dei dati di un certo giorno con i dati dell'anno precedente
                 <canvas style="display: none" id="chart_confronti" width="100%" height="100%">
                     Graph not supported by browser
                 </canvas>
@@ -57,12 +61,12 @@
 <script>
     function keyToDescription(key) {
         let descriptions = {
-            'totale_positivi': "Totale positivi",
+            'nuovi_positivi': "Nuovi positivi",
             'terapia_intensiva': "Terapia intensiva",
             'totale_ospedalizzati': "Ospedalizzati",
             'deceduti': "Deceduti",
             'nuovi_decessi': "Nuovi decessi",
-            'variazione_positivi': "Variazione positivi (%)",
+            'variazione_positivi': "Variazione nuovi positivi (%)",
             'variazione_ospedalizzati': "Variazione ospedalizzati (%)",
             'variazione_terapia_intensiva': 'Variazione terapia intensiva (%)',
             'variazione_nuovi_decessi': "Variazione decessi (%)",
@@ -72,7 +76,7 @@
 
     function buildBorderColor(key) {
         let colors = {
-            'totale_positivi': "rgb(54, 162, 235)",
+            'nuovi_positivi': "rgb(54, 162, 235)",
             'terapia_intensiva': "rgba(255, 159, 64)",
             'totale_ospedalizzati': "rgba(255, 205, 86)",
             'nuovi_decessi': "rgb(0, 0, 0)",
@@ -91,7 +95,7 @@
 
     function buildBackgroundColor(key) {
         let colors = {
-            'totale_positivi': "rgb(54, 162, 235, 0.2)",
+            'nuovi_positivi': "rgb(54, 162, 235, 0.2)",
             'terapia_intensiva': "rgba(255, 159, 64, 0.2)",
             'totale_ospedalizzati': "rgba(255, 205, 86, 0.2)",
             'nuovi_decessi': "rgb(0, 0, 0, 0.2)",
@@ -157,8 +161,8 @@
     }
 
     function drawGraphTotale(dataAll) {
-        let keys = ['totale_positivi'];
-        drawGraph("totale", "Totali", keys, dataAll);
+        let keys = ['nuovi_positivi'];
+        drawGraph("nuovi_positivi", "Nuovi positivi", keys, dataAll);
     }
 
     function drawGraphMalati(dataAll) {
@@ -183,7 +187,7 @@
         for (let i=365 + offset; i < dataAll.length; i++) {
             let el = Object.assign({}, dataAll[i]);
             let prev = dataAll[i - 365];
-            dataAll[i].variazione_positivi = variazionePercentuale(dataAll, i, 'totale_positivi');
+            dataAll[i].variazione_positivi = variazionePercentuale(dataAll, i, 'nuovi_positivi');
             dataAll[i].variazione_ospedalizzati = variazionePercentuale(dataAll, i, 'totale_ospedalizzati');
             dataAll[i].variazione_terapia_intensiva = variazionePercentuale(dataAll, i, 'terapia_intensiva');
             dataAll[i].variazione_nuovi_decessi = variazionePercentuale(dataAll, i, 'nuovi_decessi');
