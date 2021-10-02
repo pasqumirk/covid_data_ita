@@ -25,6 +25,20 @@
                 <h5>Dati acquisiti dal repository della protezione civile https://github.com/pcm-dpc/COVID-19/</h5>
             </div>
         </div>
+        <div class="row mb-5 mt-1">
+            <div class="col-lg-3">
+                <button type="button" class="btn_num btn btn-primary" data-num_last="-1">Dati totali</button>
+            </div>
+            <div class="col-lg-3">
+                <button type="button" class="btn_num btn btn-outline-primary" data-num_last="30">Ultimi 30 giorni</button>
+            </div>
+            <div class="col-lg-3">
+                <button type="button" class="btn_num btn btn-outline-primary" data-num_last="60">Ultimi 60 giorni</button>
+            </div>
+            <div class="col-lg-3">
+                <button type="button" class="btn_num btn btn-outline-primary" data-num_last="90">Ultimi 90 giorni</button>
+            </div>
+        </div>
         <div class="row">
             <div class="col-lg-6">
                 Numero giornaliero di nuovi positivi
@@ -47,14 +61,31 @@
                 </canvas>
             </div>
             <div class="col-lg-6">
-                Confronti in percentuale dei dati di un certo giorno con i dati dell'anno precedente
+                Confronto (in %) di un certo giorno con lo stesso giorno dell'anno precedente
                 <canvas style="display: none" id="chart_confronti" width="100%" height="100%">
                     Graph not supported by browser
                 </canvas>
             </div>
         </div>
+        <div class="row mt-1">
+            <div class="col-lg-3">
+                <button type="button" class="btn_num btn btn-primary" data-num_last="-1">Dati totali</button>
+            </div>
+            <div class="col-lg-3">
+                <button type="button" class="btn_num btn btn-outline-primary" data-num_last="30">Ultimi 30 giorni</button>
+            </div>
+            <div class="col-lg-3">
+                <button type="button" class="btn_num btn btn-outline-primary" data-num_last="60">Ultimi 60 giorni</button>
+            </div>
+            <div class="col-lg-3">
+                <button type="button" class="btn_num btn btn-outline-primary" data-num_last="90">Ultimi 90 giorni</button>
+            </div>
+        </div>
     </div>
 
+    <hr>
+    Grafici ottenuti con codice opensource scaricabile da 
+    <a href="https://github.com/pasqumirk/covid_data_ita">GitHub</a>
 </body>
 <script src="js/bootstrap.bundle.min.js"></script>
 
@@ -113,6 +144,7 @@
     }
 
     var current_graphs = [];
+    var num_last = -1;
 
     function drawGraph(name, title, keys, dataAll) {
         let datasets = [];
@@ -160,19 +192,28 @@
         $('#chart_'+name).show();
     }
 
-    function drawGraphTotale(dataAll) {
+    function drawGraphTotale(data) {
+        if (num_last > 0) {
+            data = data.slice (0 - num_last);
+        }
         let keys = ['nuovi_positivi'];
-        drawGraph("nuovi_positivi", "Nuovi positivi", keys, dataAll);
+        drawGraph("nuovi_positivi", "Nuovi positivi", keys, data);
     }
 
-    function drawGraphMalati(dataAll) {
+    function drawGraphMalati(data) {
+        if (num_last > 0) {
+            data = data.slice (0 - num_last);
+        }
         let keys = ['totale_ospedalizzati', 'terapia_intensiva'];
-        drawGraph("malati", "Malati", keys, dataAll);
+        drawGraph("malati", "Malati", keys, data);
     }
 
-    function drawGraphDeceduti(dataAll) {
+    function drawGraphDeceduti(data) {
+        if (num_last > 0) {
+            data = data.slice (0 - num_last);
+        }
         let keys = ['nuovi_decessi'];
-        drawGraph("deceduti", "", keys, dataAll);
+        drawGraph("deceduti", "", keys, data);
     }
 
     function variazionePercentuale(dataAll, i, key) {
@@ -184,6 +225,10 @@
 
     function drawGraphVariazioneRicoveri(dataAll) {
         let offset = 98;
+        let start = 365 + offset;
+        if (num_last > 0) {
+            start = dataAll.length - num_last;
+        }
         for (let i=365 + offset; i < dataAll.length; i++) {
             let el = Object.assign({}, dataAll[i]);
             let prev = dataAll[i - 365];
@@ -193,14 +238,29 @@
             dataAll[i].variazione_nuovi_decessi = variazionePercentuale(dataAll, i, 'nuovi_decessi');
         }
         let keys = ['variazione_positivi', 'variazione_ospedalizzati', 'variazione_terapia_intensiva', 'variazione_nuovi_decessi'];
-        let data = dataAll.slice(365 + offset);
+        let data = dataAll.slice(start);
         drawGraph("confronti", "", keys, data);
     }
 
-    drawGraphTotale(all_data);
-    drawGraphMalati(all_data);
-    drawGraphDeceduti(all_data);
+    function drawGraphs(data) {
+        drawGraphTotale(data);
+        drawGraphMalati(data);
+        drawGraphDeceduti(data);
 
-    drawGraphVariazioneRicoveri(all_data);
+        drawGraphVariazioneRicoveri(data)
+    }
+
+    drawGraphs(all_data);
+
+
+    $(".btn_num").click(function() {
+        //spn_num_last_text
+        num_last = $(this).data('num_last');
+        drawGraphs(all_data);
+        $(".btn_num").removeClass("btn-primary");
+        $(".btn_num").addClass("btn-outline-primary");
+        $(this).removeClass("btn-outline-primary");
+        $(this).addClass("btn-primary");
+    });
     
 </script>
