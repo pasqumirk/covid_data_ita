@@ -65,20 +65,54 @@
                 <canvas style="display: none" id="chart_confronti" width="100%" height="100%">
                     Graph not supported by browser
                 </canvas>
+                <div class="form-check form-switch">
+                    <input class="form-check-input" type="checkbox" id="escludiNuoviPositivi">
+                    <label class="form-check-label" for="escludiNuoviPositivi">escludi nuovi positivi</label>
+                </div>
             </div>
         </div>
         <div class="row mt-1">
             <div class="col-lg-3">
-                <button type="button" class="btn_num btn btn-primary" data-num_last="-1">Dati totali</button>
+                <button type="button" class="btn_num btn btn-primary" data-num_last="-1">
+                    Dati totali
+                </button>
             </div>
             <div class="col-lg-3">
-                <button type="button" class="btn_num btn btn-outline-primary" data-num_last="30">Ultimi 30 giorni</button>
+                <button type="button" class="btn_num btn btn-outline-primary" data-num_last="30">
+                    Ultimi 30 giorni
+                </button>
             </div>
             <div class="col-lg-3">
-                <button type="button" class="btn_num btn btn-outline-primary" data-num_last="60">Ultimi 60 giorni</button>
+                <button type="button" class="btn_num btn btn-outline-primary" data-num_last="60">
+                    Ultimi 60 giorni
+                </button>
             </div>
             <div class="col-lg-3">
-                <button type="button" class="btn_num btn btn-outline-primary" data-num_last="90">Ultimi 90 giorni</button>
+                <button type="button" class="btn_num btn btn-outline-primary" data-num_last="90">
+                    Ultimi 90 giorni
+                </button>
+            </div>
+        </div>
+        <div class="row mt-1">
+            <div class="col-lg-3">
+                <button type="button" class="btn_aggregation btn btn-primary" data-num_days="1">
+                    Dati non aggregati
+                </button>
+            </div>
+            <div class="col-lg-3">
+                <button type="button" class="btn_aggregation btn btn-outline-primary" data-num_days="3">
+                    Media su 3 giorni
+                </button>
+            </div>
+            <div class="col-lg-3">
+                <button type="button" class="btn_aggregation btn btn-outline-primary" data-num_days="7">
+                    Media su 7 giorni
+                </button>
+            </div>
+            <div class="col-lg-3">
+                <button type="button" class="btn_aggregation btn btn-outline-primary" data-num_days="15">
+                    Media su 15 giorni
+                </button>
             </div>
         </div>
     </div>
@@ -145,6 +179,7 @@
 
     var current_graphs = [];
     var num_last = -1;
+    var current_data = all_data;
 
     function drawGraph(name, title, keys, dataAll) {
         let datasets = [];
@@ -223,7 +258,7 @@
             Math.round(((el[key] - prev[key]) * 1000) / prev[key]) / 10;
     }
 
-    function drawGraphVariazioneRicoveri(dataAll) {
+    function drawGraphVariazioneRicoveri(dataAll, exclude_nuovi_positivi) {
         let offset = 98;
         let start = 365 + offset;
         if (num_last > 0) {
@@ -238,6 +273,9 @@
             dataAll[i].variazione_nuovi_decessi = variazionePercentuale(dataAll, i, 'nuovi_decessi');
         }
         let keys = ['variazione_positivi', 'variazione_ospedalizzati', 'variazione_terapia_intensiva', 'variazione_nuovi_decessi'];
+        if (exclude_nuovi_positivi) {
+            keys = keys.slice(1);
+        }
         let data = dataAll.slice(start);
         drawGraph("confronti", "", keys, data);
     }
@@ -246,21 +284,58 @@
         drawGraphTotale(data);
         drawGraphMalati(data);
         drawGraphDeceduti(data);
-
-        drawGraphVariazioneRicoveri(data)
+        let escludiNuoviPositivi = $('#escludiNuoviPositivi').is(':checked');
+        drawGraphVariazioneRicoveri(data, escludiNuoviPositivi);
     }
 
-    drawGraphs(all_data);
+    drawGraphs(current_data);
 
+    function buildAveragedData(num_days) {
+        if (num_days == 1) {
+            return all_data;
+        }
+        var ret = [];
+        for (let i=num_days; i < all_data.length; i++) {
+            let el = Object.assign({}, all_data[i]);
+            for (let j=1; j < num_days; j++) {
+                prev = all_data[i - j];
+                el.nuovi_positivi += prev.nuovi_positivi;
+                el.totale_ospedalizzati += prev.totale_ospedalizzati;
+                el.nuovi_decessi += prev.nuovi_decessi;
+                el.terapia_intensiva += prev.terapia_intensiva;
+            }
+            el.nuovi_positivi /= 7;
+            el.totale_ospedalizzati /= 7;
+            el.nuovi_decessi /= 7;
+            el.terapia_intensiva /= 7;
+            ret.push(el)
+        }
+        return ret;
+    }
 
     $(".btn_num").click(function() {
         //spn_num_last_text
         num_last = $(this).data('num_last');
-        drawGraphs(all_data);
+        drawGraphs(current_data);
         $(".btn_num").removeClass("btn-primary");
         $(".btn_num").addClass("btn-outline-primary");
         $(this).removeClass("btn-outline-primary");
         $(this).addClass("btn-primary");
     });
-    
+
+    $(".btn_aggregation").click(function() {
+        //spn_num_last_text
+        let num_days = $(this).data('num_days');
+        current_data = buildAveragedData(num_days);
+        drawGraphs(current_data);
+        $(".btn_aggregation").removeClass("btn-primary");
+        $(".btn_aggregation").addClass("btn-outline-primary");
+        $(this).removeClass("btn-outline-primary");
+        $(this).addClass("btn-primary");
+    });
+
+    $('#escludiNuoviPositivi').change(function () {
+        drawGraphs(current_data);
+    });
+
 </script>
